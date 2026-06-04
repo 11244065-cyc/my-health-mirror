@@ -1,1 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色化健康鏡像系統 - 樹洞日誌完全體</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=400;500;700;900&display=swap');
 
+        :root {
+            --p-black: #2c2523;
+            --p-bg: #eef2f7;
+            /* 7大萌獸粉嫩色調 */
+            --c-capybara: #ccfb71;   
+            --c-cat: #dfc2f9;        
+            --c-deer: #fef08a;       
+            --c-rabbit: #fed7aa;     
+            --c-whale: #bae6fd;      
+            --c-eagle: #ccfbf1;      
+            --c-fox: #ffedd5;        
+            
+            /* 四大任務專屬線條顏色 */
+            --t-water: #0284c7;
+            --t-walk: #16a34a;
+            --t-sleep: #7c3aed;
+            --t-diet: #ea580c;
+
+            --theme-blue: #38bdf8;
+            --theme-pink: #f472b6;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--p-bg);
+            color: var(--p-black);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 外部大後台看板 */
+        .b-sidebar {
+            width: 250px; background-color: #1a1514;
+            border-right: 4px solid var(--p-black); color: #fff;
+            display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box;
+        }
+        .b-logo {
+            font-size: 14px; font-weight: bold; border: 3px solid #fff;
+            padding: 8px; text-align: center; box-shadow: 3px 3px 0px var(--theme-blue);
+        }
+        .b-menu { list-style: none; padding: 0; margin: 30px 0 0 0; }
+        .b-menu-item {
+            display: block; padding: 12px; color: #a1a1aa; text-decoration: none;
+            font-size: 13px; font-weight: bold; border: 2px solid transparent; margin-bottom: 6px;
+        }
+        .b-menu-item.active { color: var(--theme-blue); border: 2px solid var(--theme-blue); background: #27211f; }
+
+        .b-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .b-header { background: #fff; padding: 14px 24px; border-bottom: 4px solid var(--p-black); display: flex; align-items: center; justify-content: space-between; }
+        .b-content { flex: 1; display: flex; padding: 20px; gap: 20px; overflow-y: auto; }
+
+        .b-dashboard { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+        .b-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .b-card { background: #fff; border: 3px solid var(--p-black); padding: 14px; box-shadow: 4px 4px 0px var(--p-black); }
+        .b-kpi-title { font-size: 11px; color: #71717a; font-weight: bold; margin-bottom: 4px; }
+        .b-kpi-val { font-size: 24px; font-weight: 900; }
+        .b-tag { display: inline-block; padding: 2px 6px; font-size: 10px; font-weight: bold; border: 2px solid var(--p-black); background: #ccfbf1; margin-top: 4px; }
+
+        /* 後台日誌與動態像素卡樣式 */
+        .log-item {
+            border-bottom: 1px dashed #e4e4e7; padding: 8px 0; font-size: 11px; line-height: 1.4;
+        }
+        .log-snapshot-card {
+            background: #fff; border: 2px solid var(--p-black); border-radius: 6px;
+            padding: 6px; margin-top: 4px; display: inline-block; font-size: 10px; box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+        }
+
+        /* 手機外殼與內頁 */
+        .phone-space { width: 370px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-right: 16px; }
+        .pixel-phone-shell {
+            width: 340px; height: 670px; background-color: #fff;
+            border: 5px solid var(--p-black); border-radius: 36px; position: relative;
+            box-shadow: 8px 8px 0px var(--p-black); display: flex; flex-direction: column; overflow: hidden;
+        }
+        .phone-island-bar { width: 110px; height: 18px; background: var(--p-black); border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; margin: 0 auto; shrink: 0; z-index: 30; }
+        
+        .phone-canvas { flex: 1; padding: 14px; background: #faf6f0; overflow-y: auto; padding-bottom: 64px; display: flex; flex-direction: column; box-sizing: border-box; }
+        .p-page { display: none; flex-direction: column; height: 100%; }
+        .p-page.active { display: flex; }
+
+        .cute-box {
+            background: #ffffff; border: 3px solid var(--p-black); border-radius: 14px;
+            padding: 10px; box-shadow: 4px 4px 0px var(--p-black); margin-bottom: 12px;
+            position: relative;
+        }
+        .cute-title { font-size: 13px; font-weight: 900; color: var(--p-black); margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+
+        .cute-btn {
+            background: #ffffff; border: 3px solid var(--p-black); padding: 8px;
+            font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 3px 3px 0px var(--p-black);
+            text-align: center; display: block; width: 100%; box-sizing: border-box; border-radius: 10px; margin-bottom: 8px;
+            transition: transform 0.1s;
+        }
+        .cute-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px var(--p-black); }
+        .cute-btn-primary { background: #fca5a5; color: var(--p-black); font-weight: 900; }
+        .cute-btn-line { background: #06c755; color: white; font-weight: 900; text-shadow: 1px 1px 0px #000; border-color: var(--p-black); }
+
+        /* 量化控制項間距 */
+        .range-container { margin: 6px 0; background: #fff5f0; padding: 8px; border: 2px dashed var(--p-black); border-radius: 8px; }
+        .cute-slider {
+            -webkit-appearance: none; width: 100%; height: 8px; background: #e2e8f0;
+            border: 2px solid var(--p-black); border-radius: 6px; outline: none; margin-top: 4px;
+        }
+        .cute-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 16px; height: 16px;
+            background: var(--theme-pink); border: 2px solid var(--p-black); border-radius: 6px; cursor: pointer;
+        }
+        .cute-select {
+            width: 100%; padding: 4px; border: 2px solid var(--p-black); border-radius: 6px;
+            font-weight: bold; background: #fff; font-size: 11px; margin-top: 4px;
+        }
+        /* 自訂文字輸入框 */
+        .cute-textarea {
+            width: 100%; height: 46px; padding: 6px; border: 2px solid var(--p-black); border-radius: 8px;
+            font-size: 11px; font-family: inherit; box-sizing: border-box; resize: none; outline: none; margin-bottom: 6px;
+        }
+
+        /* 統計週曆 */
+        .week-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 6px; }
+        .calendar-day-node {
+            border: 2px solid var(--p-black); border-radius: 8px; padding: 4px 2px;
+            text-align: center; background: #fff; font-size: 10px; font-weight: bold;
+        }
+        .calendar-day-node.today { background: #fef08a; border-color: var(--theme-pink); box-shadow: 2px 2px 0px var(--p-black); }
+
+        .circle-progress-svg { width: 34px; height: 34px; transform: rotate(-90deg); margin: 2px 0; }
+        .circle-progress-bg { fill: none; stroke: #f3f4f6; stroke-width: 5; }
+        .circle-progress-fill { fill: none; stroke: var(--theme-blue); stroke-width: 5; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.2s; stroke-linecap: round; }
+
+        .sub-stat-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: bold; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 2px dashed #ebdcd5; }
+        
+        /* 調整：圖表大幅度靠左移 (margin-left: 12px)，每格縮小至 40px，完美相容一到日橫軸且不超出手機殼 */
+        .pixel-chart-container { height: 90px; border-left: 2px solid var(--p-black); border-bottom: 2px solid var(--p-black); position: relative; margin: 25px 5px 5px 12px; }
+        .chart-legend-box { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; justify-content: center; }
+        .legend-item { font-size: 9px; font-weight: bold; display: flex; align-items: center; gap: 4px; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 2px; border: 1px solid var(--p-black); }
+
+        /* 照顧提示分頁結構 */
+        .tip-section { margin-bottom: 10px; padding: 8px; border-radius: 8px; border: 2px dashed var(--p-black); background: #fff; }
+        .tip-sec-title { font-size: 12px; font-weight: 900; color: var(--p-black); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+        .tip-sec-content { font-size: 11px; color: #4b5563; line-height: 1.5; }
+
+        .phone-bottom-nav {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 54px;
+            background: #ffffff; border-top: 4px solid var(--p-black); display: flex; justify-content: space-around; align-items: center; z-index: 20;
+        }
+        .nav-pixel-tab { flex: 1; text-align: center; font-size: 11px; font-weight: bold; color: #a1a1aa; cursor: pointer; display: flex; flex-direction: column; gap: 2px; height: 100%; justify-content: center; }
+        .nav-pixel-tab.active { color: var(--p-black); background: #fff7ed; font-weight: 900; }
+    </style>
+</head>
+<body>
+
+    <div class="b-sidebar">
+        <div>
+            <div class="b-logo">🕹️ MIRROR MONITOR V6</div>
+            <ul class="b-menu">
+                <li><a href="#" class="b-menu-item active">📈 CJM 轉化大盤</a></li>
+                <li><a href="#" class="b-menu-item">👥 匿名流追蹤</a></li>
+            </ul>
+        </div>
+        <div style="font-size: 10px; color: #52525b; text-align: center;">🛡️ COMPLIANCE SECURE</div>
+    </div>
+
+    <div class="b-main">
+        <div class="b-header">
+            <h2 style="font-size: 15px; margin: 0; font-weight: 900;">📊 角色化健康鏡像系統 - 樹洞日誌完全體</h2>
+            <span style="font-size: 11px; font-weight: bold; background: #dcfce7; padding: 4px 8px; border: 2px solid var(--p-black); color: #15803d;">● 全數據對接正常</span>
+        </div>
+
+        <div class="b-content">
+            <div class="b-dashboard">
+                <div class="b-grid">
+                    <div class="b-card">
+                        <div class="b-kpi-title">📋 問卷完成率 (目標 70%+)</div>
+                        <div class="b-kpi-val" style="color: #16a34a;">84.2%</div>
+                        <div class="b-tag">高於目標 14.2%</div>
+                    </div>
+                    <div class="b-card">
+                        <div class="b-kpi-title">🎯 LINE OA 導流點擊率</div>
+                        <div class="b-kpi-val" style="color: #2563eb;">51.7%</div>
+                        <div class="b-tag">點擊反饋極佳</div>
+                    </div>
+                    <div class="b-card">
+                        <div class="b-kpi-title">⏳ 7 日使用者健康留存率</div>
+                        <div class="b-kpi-val" style="color: #9333ea;">38.5%</div>
+                        <div class="b-tag">多工黏著度上升</div>
+                    </div>
+                    <div class="b-card">
+                        <div class="b-kpi-title">💾 LINE OA 綁定轉化總量</div>
+                        <div id="b-dl-counter" class="b-kpi-val" style="color: #06c755;">1,754 次</div>
+                        <div class="b-tag" style="background:#dcfce7;">私域閉環成功</div>
+                    </div>
+                </div>
+
+                <div class="b-card" style="flex: 1;">
+                    <div class="b-kpi-title" style="color:var(--p-black); font-size:12px;">🕒 實時使用者心聲與卡片鏡像日誌</div>
+                    <div id="b-log-box" style="font-size: 11px; color: #4b5563; font-family: monospace; line-height: 1.6; height: 160px; overflow-y: auto; background: #fbfbfb; padding: 8px; border: 2px dashed #ccc;">
+                        <div class="log-item">[初始化成功] 週五動態截止折線功能已部署。橫軸保留至週日，繪製範圍完美鎖定至今日。</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phone-space">
+                <div class="pixel-phone-shell">
+                    <div class="phone-island-bar"></div>
+                    <div class="phone-canvas">
+
+                        <div id="p-tab-main" class="p-page active">
+                            
+                            <div id="node-hero">
+                                <div class="cute-box" style="background: var(--c-capybara); text-align: center; margin-top: 10px;">
+                                    <div style="font-size: 52px; margin-bottom: 8px;">🦦</div>
+                                    <h3 style="margin: 0 0 6px 0; font-size: 18px; font-weight:900;">健康鏡像圖鑑 ✨</h3>
+                                    <p style="font-size: 11px; color: #3f3f46; margin: 0 0 16px 0; font-weight: bold; line-height:1.4;">「捕捉你此時此刻的靈魂，<br>用最舒服的節奏無痛調節！」</p>
+                                    <button class="cute-btn cute-btn-primary" onclick="goNode('quiz')">傾聽我現在的狀態 🔋</button>
+                                </div>
+                            </div>
+
+                            <div id="node-quiz" style="display: none;">
+                                <div class="cute-box">
+                                    <div id="q-step-1">
+                                        <div class="cute-title">🪐 Q1. 伸個懶腰，你覺得靈魂現在幾趴電？</div>
+                                        <button class="cute-btn" onclick="nextQuiz(1, 'cat')">🔋 10%... 好想就地躺平冬眠</button>
+                                        <button class="cute-btn" onclick="nextQuiz(1, 'none')">⚡ 80%! 還能再戰好幾回合</button>
+                                    </div>
+                                    <div id="q-step-2" style="display:none;">
+                                        <div class="cute-title">🌊 Q2. 現在最想獲得什麼超能力？</div>
+                                        <button class="cute-btn" onclick="nextQuiz(2, 'capybara')">💧 瘋狂灌水的淨化超能力</button>
+                                        <button class="cute-btn" onclick="nextQuiz(2, 'deer')">🏃 離開椅子大步走的超能力</button>
+                                        <button class="cute-btn" onclick="nextQuiz(2, 'none')">✨ 大腦一秒放空的冥想超能力</button>
+                                    </div>
+                                    <div id="q-step-3" style="display:none;">
+                                        <div class="cute-title">🥗 Q3. 今晚的胃，會想召喚什麼食物？</div>
+                                        <button class="cute-btn" onclick="calcResult('rabbit')">🐰 乾淨舒服的原型食物</button>
+                                        <button class="cute-btn" onclick="calcResult('whale')">🐋 都可以，想讓大腦發呆休息</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="node-result" style="display: none;">
+                                <div id="role-card-box" class="cute-box" style="text-align:center; padding: 10px; margin-bottom: 8px;">
+                                    <div id="role-emoji" style="font-size:36px; margin: 0;">🦦</div>
+                                    <div id="role-name" style="font-weight:900; font-size:14px; margin: 2px 0;">光合水豚</div>
+                                    <div id="role-story" style="font-size:11px; color:#4b5563; line-height:1.3; margin-bottom: 4px;"></div>
+                                    
+                                    <div>
+                                        <select class="cute-select" id="role-switcher" onchange="changeRoleDirectly(this.value)">
+                                            <option value="capybara">🦦 召喚 光合水豚 (主攻補水)</option>
+                                            <option value="cat">🐱 召喚 星眠貓 (主攻睡眠)</option>
+                                            <option value="deer">🦌 召喚 森活鹿 (主攻步行)</option>
+                                            <option value="rabbit">🐰 召喚 穀雨兔 (主攻原型食物)</option>
+                                            <option value="whale">🐋 召喚 澄心鯨 (主攻冥想留白)</option>
+                                            <option value="eagle">🦅 召喚 晨光鷹 (主攻專注推進)</option>
+                                            <option value="fox">🦊 召喚 雲步狐 (主攻彈性放鬆)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="cute-box" style="margin-bottom: 6px; padding: 8px;">
+                                    <div class="cute-title" style="color:var(--theme-pink); font-size: 11px; margin-bottom: 4px;">🛠️ 多維度今日健康鏡像打卡</div>
+                                    
+                                    <div class="range-container">
+                                        <div style="font-size:10px; font-weight:bold; display:flex; justify-content:space-between;">
+                                            <span>💧 純水灌溉量：</span><span style="color:var(--t-water);" id="val-water">800 ml</span>
+                                        </div>
+                                        <input type="range" class="cute-slider" id="slide-water" min="0" max="2000" value="800" oninput="updateAllStats()">
+                                    </div>
+
+                                    <div class="range-container">
+                                        <div style="font-size:10px; font-weight:bold; display:flex; justify-content:space-between;">
+                                            <span>🚶 散步與微伸展：</span><span style="color:var(--t-walk);" id="val-walk">3.0 km</span>
+                                        </div>
+                                        <input type="range" class="cute-slider" id="slide-walk" min="0" max="10" value="3" step="0.1" oninput="updateAllStats()">
+                                    </div>
+
+                                    <div class="range-container">
+                                        <div style="font-size:10px; font-weight:bold; display:flex; justify-content:space-between;">
+                                            <span>💤 昨晚充電睡眠：</span><span style="color:var(--t-sleep);" id="val-sleep">6.0 小時</span>
+                                        </div>
+                                        <input type="range" class="cute-slider" id="slide-sleep" min="0" max="12" value="6" oninput="updateAllStats()">
+                                    </div>
+
+                                    <div class="range-container">
+                                        <div style="font-size:10px; font-weight:bold; display:flex; justify-content:space-between;">
+                                            <span>🍎 原型食物均衡度：</span><span style="color:var(--t-diet);" id="val-diet">50 %</span>
+                                        </div>
+                                        <input type="range" class="cute-slider" id="slide-diet" min="0" max="100" value="50" oninput="updateAllStats()">
+                                    </div>
+                                </div>
+
+                                <div class="cute-box" style="margin-bottom: 6px; padding: 8px;">
+                                    <div class="cute-title" style="font-size:11px; margin-bottom: 4px;">✍️ 今日樹洞與心情隨筆</div>
+                                    <textarea class="cute-textarea" id="user-note-input" placeholder="寫點想記錄的東西或悄悄話吧...（點保存卡片會同步上傳後台日誌喔！）"></textarea>
+                                </div>
+
+                                <div class="cute-box" style="background: #fdf4ff; border-color: #d946ef; padding: 8px; margin-bottom: 4px;">
+                                    <div class="cute-title" style="color:#a21caf; font-size: 11px; margin-bottom: 4px;">🎉 最後階段！把萌獸帶回 LINE</div>
+                                    <button class="cute-btn cute-btn-primary" style="font-size:11px; margin-bottom:4px; padding: 6px;" onclick="saveMirrorCardAndText()">💾 保存今日鏡像卡與日記</button>
+                                    <button class="cute-btn cute-btn-line" style="font-size:11px; margin-bottom:0; padding: 6px;" onclick="connectLineOA()">💬 一鍵綁定 LINE OA 看週報</button>
+                                </div>
+                                
+                                <button class="cute-btn" style="font-size:10px; padding:3px; background:#f4f4f5; border-color:#ccc; margin-top:2px;" onclick="restartQuiz()">重新測驗</button>
+                            </div>
+
+                        </div>
+
+                        <div id="p-tab-stats" class="p-page">
+                            <div class="cute-title">📅 萌獸健康週曆行事曆</div>
+                            
+                            <div class="week-calendar-grid" id="calendar-grid-box">
+                                <div class="calendar-day-node" id="cal-1"><div>一</div><svg class="circle-progress-svg"><circle class="circle-progress-bg" cx="17" cy="17" r="12"></circle><circle class="circle-progress-fill" cx="17" cy="17" r="12" style="stroke-dashoffset: 20; stroke: #a3e635;"></circle></svg><div style="font-size:9px; font-weight:900;">80%</div></div>
+                                <div class="calendar-day-node" id="cal-2"><div>二</div><svg class="circle-progress-svg"><circle class="circle-progress-bg" cx="17" cy="17" r="12"></circle><circle class="circle-progress-fill" cx="17" cy="17" r="12" style="stroke-dashoffset: 40; stroke: #bae6fc;"></circle></svg><div style="font-size:9px; font-weight:900;">60%</div></div>
+                                <div class="calendar-day-node" id="cal-3"><div>三</div><div style="font-size:11px; color:#ea580c; font-weight:900; margin:2px 0;">🎉</div><div style="font-size:9px; color:#059669; font-weight:900;">100%</div></div>
+                                <div class="calendar-day-node" id="cal-4"><div>四</div><svg class="circle-progress-svg"><circle class="circle-progress-bg" cx="17" cy="17" r="12"></circle><circle class="circle-progress-fill" cx="17" cy="17" r="12" style="stroke-dashoffset: 50; stroke: #dfc2f9;"></circle></svg><div style="font-size:9px; font-weight:900;">50%</div></div>
+                                <div class="calendar-day-node today" id="cal-5"><div>五★</div><svg class="circle-progress-svg"><circle class="circle-progress-bg" cx="17" cy="17" r="12"></circle><circle id="circle-today-fill" class="circle-progress-fill" cx="17" cy="17" r="12"></circle></svg><div id="circle-today-txt" style="font-size:9px; font-weight:900; color:var(--theme-pink);">0%</div></div>
+                                <div class="calendar-day-node" id="cal-6"><div>六</div><svg class="circle-progress-svg"><circle class="circle-progress-bg" cx="17" cy="17" r="12"></circle><circle class="circle-progress-fill" cx="17" cy="17" r="12" style="stroke-dashoffset: 100; stroke: #fca5a5;"></circle></svg><div style="font-size:9px; font-weight: 900; color:#cbd5e1;">-</div></div>
+                                <div class="calendar-day-node" id="cal-7"><div>日</div><svg class="circle-progress-svg"><circle class="circle-progress-bg" cx="17" cy="17" r="12"></circle><circle class="circle-progress-fill" cx="17" cy="17" r="12" style="stroke-dashoffset: 100; stroke: #fed7aa;"></circle></svg><div style="font-size:9px; font-weight: 900; color:#cbd5e1;">-</div></div>
+                            </div>
+
+                            <div class="cute-box" style="margin-top:10px; padding: 8px;">
+                                <div class="cute-title" style="font-size:12px;">📈 全任務即時週趨勢圖</div>
+                                <div class="pixel-chart-container">
+                                    <div style="position:absolute; bottom:-16px; left:0px; font-size:8px; font-weight:bold; color:#71717a;">一</div>
+                                    <div style="position:absolute; bottom:-16px; left:40px; font-size:8px; font-weight:bold; color:#71717a;">二</div>
+                                    <div style="position:absolute; bottom:-16px; left:80px; font-size:8px; font-weight:bold; color:#71717a;">三</div>
+                                    <div style="position:absolute; bottom:-16px; left:120px; font-size:8px; font-weight:bold; color:#71717a;">四</div>
+                                    <div style="position:absolute; bottom:-16px; left:160px; font-size:8px; font-weight:bold; color:var(--theme-pink);">五</div>
+                                    <div style="position:absolute; bottom:-16px; left:200px; font-size:8px; font-weight:bold; color:#a1a1aa;">六</div>
+                                    <div style="position:absolute; bottom:-16px; left:240px; font-size:8px; font-weight:bold; color:#a1a1aa;">日</div>
+                                    
+                                    <svg style="width:100%; height:100%; overflow:visible;">
+                                        <polyline fill="none" stroke="var(--t-water)" stroke-width="2.5" id="line-water" />
+                                        <circle id="dot-water" r="3.5" fill="var(--t-water)" stroke="var(--p-black)" stroke-width="1" />
+
+                                        <polyline fill="none" stroke="var(--t-walk)" stroke-width="2.5" id="line-walk" />
+                                        <circle id="dot-walk" r="3.5" fill="var(--t-walk)" stroke="var(--p-black)" stroke-width="1" />
+
+                                        <polyline fill="none" stroke="var(--t-sleep)" stroke-width="2.5" id="line-sleep" />
+                                        <circle id="dot-sleep" r="3.5" fill="var(--t-sleep)" stroke="var(--p-black)" stroke-width="1" />
+
+                                        <polyline fill="none" stroke="var(--t-diet)" stroke-width="2.5" id="line-diet" />
+                                        <circle id="dot-diet" r="3.5" fill="var(--t-diet)" stroke="var(--p-black)" stroke-width="1" />
+                                    </svg>
+                                </div>
+                                <div class="chart-legend-box">
+                                    <div class="legend-item"><div class="legend-dot" style="background:var(--t-water);"></div>💧補水</div>
+                                    <div class="legend-item"><div class="legend-dot" style="background:var(--t-walk);"></div>🚶步行</div>
+                                    <div class="legend-item"><div class="legend-dot" style="background:var(--t-sleep);"></div>💤睡眠</div>
+                                    <div class="legend-item"><div class="legend-dot" style="background:var(--t-diet);"></div>🍎食物</div>
+                                </div>
+                            </div>
+
+                            <div class="cute-box" style="padding: 8px; margin-bottom: 0;">
+                                <div class="cute-title" style="color:var(--theme-blue); font-size:11px; margin-bottom:6px;">📊 今日即時數據</div>
+                                <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px;">
+                                    <div class="sub-stat-row" style="margin:0; padding:2px 0;"><span>💧 補水率:</span><span id="stat-water" style="color:var(--t-water);">0%</span></div>
+                                    <div class="sub-stat-row" style="margin:0; padding:2px 0;"><span>🚶 步行率:</span><span id="stat-walk" style="color:var(--t-walk);">0%</span></div>
+                                    <div class="sub-stat-row" style="margin:0; padding:2px 0;"><span>💤 睡眠率:</span><span id="stat-sleep" style="color:var(--t-sleep);">0%</span></div>
+                                    <div class="sub-stat-row" style="margin:0; padding:2px 0; border:none;"><span>🍎 食物率:</span><span id="stat-diet" style="color:var(--t-diet);">0%</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="p-tab-info" class="p-page">
+                            <div class="cute-title" id="info-page-title">💡 當前萌獸照顧指南</div>
+                            <div id="dynamic-info-box" style="overflow-y: auto; max-height: 520px; padding-right: 2px;"></div>
+                        </div>
+
+                    </div>
+
+                    <div class="phone-bottom-nav">
+                        <div id="tab-nav-main" class="nav-pixel-tab active" onclick="navToPage('main')"><span>🎯</span><span>每日打卡</span></div>
+                        <div id="tab-nav-stats" class="nav-pixel-tab" onclick="navToPage('stats')"><span>📊</span><span>統計週曆</span></div>
+                        <div id="tab-nav-info" class="nav-pixel-tab" onclick="navToPage('info')"><span>💡</span><span>照顧提示</span></div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 核心解鎖：七大萌獸多工照顧指南、現代人痛點檢測與無痛調節完整資料庫庫
+        const roleData = {
+            capybara: { 
+                name: '光合水豚 🦦', emoji: '🦦', color: 'var(--c-capybara)', 
+                story: '「生活溫和。此時適合透過純水灌溉平衡日常節奏。」',
+                tips: `
+                    <div class="tip-section">
+                        <div class="tip-sec-title">🚨 現代人痛點檢測</div>
+                        <div class="tip-sec-content">大腦有 75% 是水。當你感到莫名焦慮、疲憊或想吃甜食時，往往不是真的餓了，而是大腦正在對你發出「極度缺水」的無聲警報！</div>
+                    </div>
+                    <div class="tip-section">
+                        <div class="tip-sec-title">🌱 水豚式無痛調節行動</div>
+                        <div class="tip-sec-content">• <b>番茄鐘喝水法</b>：每工作 25 分鐘，起立喝 3 口純水。<br>• <b>晨間喚醒</b>：醒來第一件事空腹灌下 200ml 溫開水。</div>
+                    </div>
+                    <div class="tip-section">
+                        <div class="tip-sec-title">💡 萌獸冷知識</div>
+                        <div class="tip-sec-content">水豚為什麼隨時看起來都那麼情緒穩定？因為牠們熱愛泡溫泉！多喝溫水，你的大腦也會跟著情緒穩定喔。</div>
+                    </div>`
+            },
+            cat: { 
+                name: '星眠貓 🐱', emoji: '🐱', color: 'var(--c-cat)', 
+                story: '「夜色溫柔。今晚提早關閉螢幕，給身體舒壓擁抱。」',
+                tips: `
+                    <div class="tip-section">
+                        <div class="tip-sec-title">🚨 現代人痛點檢測</div>
+                        <div class="tip-sec-content">躺在床上刷手機，螢幕藍光會嚴重抑制「褪黑激素」分泌，讓大腦誤以為還是中午，導致進入「報復性熬夜」惡性循環。</div>
+                    </div>
+                    <div class="tip-section">
+                        <div class="tip-sec-title">🌱 貓咪式無痛調節行動</div>
+                        <div class="tip-sec-content">• <b>手機任意門</b>：睡前 30 分鐘，強制將手機充電座移到伸手拿不到的遠方。<br>• <b>微光沉浸</b>：調暗房間燈光，預熱深層睡眠環境。</div>
+                    </div>
+                    <div class="tip-section">
+                        <div class="tip-sec-title">💡 萌獸冷知識</div>
+                        <div class="tip-sec-content">貓咪一天可以睡 12-16 小時。人類不需要睡那麼久，但抓緊「黃金前 90 分鐘」深度睡眠，就能清除大腦一整天累積的垃圾！</div>
+                    </div>`
+            },
+            deer: { 
+                name: '森活鹿 🦌', emoji: '🦌', color: 'var(--c-deer)', 
+                story: '「日常漫步。久坐的下肢渴望微步活化與伸展。」',
+                tips: `
+                    <div class="tip-section">
+                        <div class="tip-sec-title">🚨 現代人痛點檢測</div>
+                        <div class="tip-sec-content">連續久坐超過 2 小時，下肢血液循環會降低 50%，這也是為什麼你一到下午就覺得腿部腫脹、腦袋異常昏沉。</div>
+                    </div>
+                    <div class="tip-section">
+                        <div class="tip-sec-title">🌱 小鹿式無痛調節行動</div>
+                        <div class="tip-sec-content">• <b>動態思考</b>：講電話或思考企劃時，試著站起來在辦公桌周圍踱步走動。<br>• <b>微伸展挑戰</b>：去廁所或裝水時，順便做 3 次墊腳尖伸展。</div>
+                    </div>
+                    <div class="tip-section">
+                        <div class="tip-sec-title">💡 萌獸冷知識</div>
+                        <div class="tip-sec-content">人類的大腦在「步行」移動時，空間感知與創造力會提升 60%！卡稿時別坐在椅子上硬撐，起來小鹿漫步吧！</div>
+                    </div>`
+            },
+            rabbit: { 
+                name: '穀雨兔 🐰', emoji: '🐰', color: 'var(--c-rabbit)', 
+                story: '「餐盤選擇。今日更歡迎無負擔的原型食物修復。」',
+                tips: `
+                    <div class="tip-section">
+                        <div class="tip-sec-title">🚨 現代人痛點檢測</div>
+                        <div class="tip-sec-content">超加工食物（高糖、精緻澱粉）會引發微發炎，這就是你吃完重口味外送便當後，血糖爆表、昏昏欲睡（食物昏迷）的罪魁禍首。</div>
+                    </div>
+                    <div class="tip-section">
+                        <div class="tip-sec-title">🌱 兔子式無痛調節行動</div>
+                        <div class="tip-sec-content">• <b>加法飲食</b>：只需在餐盤裡「多加一樣」看得出食物原貌的蔬菜或優質蛋白質。<br>• <b>辨識成分</b>：吃零食前看一下成分表，成分越簡單對身體負擔越小。</div>
+                    </div>
+                    <div class="tip-section">
+                        <div class="tip-sec-title">💡 萌獸冷知識</div>
+                        <div class="tip-sec-content">多咀嚼天然原型食物，能有效刺激大腦分泌飽足信號，並在不知不覺中降低對重口味垃圾食物的化學渴望。</div>
+                    </div>`
+            },
+            whale: { 
+                name: '澄心鯨 🐋', emoji: '🐋', color: 'var(--c-whale)', 
+                story: '「身心整理。幫大腦留白，暫時靜止周遭雜音。」',
+                tips: `
+                    <div class="tip-section">
+                        <div class="tip-sec-title">🚨 現代人痛點檢測</div>
+                        <div class="tip-sec-content">過度的社群資訊過載（FOMO 焦慮）會讓壓力荷爾蒙持續處於高點，長期下來會造成神經緊繃與間歇性注意力無法集中。</div>
+                    </div>
+                    <div class="tip-section">
+                        <div class="tip-sec-title">🌱 藍鯨式無痛調節行動</div>
+                        <div class="tip-sec-content">• <b>4-7-8 冥想呼吸</b>：吸氣 4 秒、憋氣 7 秒、吐氣 8 秒，連續重複 3 次。<br>• <b>短暫感官關閉</b>：午休或高壓時戴上耳機，閉眼 5 分鐘進行大腦格式化清空。</div>
+                    </div>
+                    <div class="tip-section">
+                        <div class="tip-sec-title">💡 萌獸冷知識</div>
+                        <div class="tip-sec-content">藍鯨在深海中下潛時，心跳會降到極低。學會讓自己有節奏地下潛與慢下來，是保護心靈核心能量的最強防禦機制。</div>
+                    </div>`
+            },
+            eagle: { 
+                name: '晨光鷹 🦅', emoji: '🦅', color: 'var(--c-eagle)', 
+                story: '「狀態輕快。今日適合有條不紊地推進計劃。」',
+                tips: `
+                    <div class="tip-section">
+                        <div class="tip-sec-title">🚨 現代人痛點檢測</div>
+                        <div class="tip-sec-content">多工並行（一邊切分頁一邊回訊息）其實是一種「注意力碎片化」的假性忙碌，它會多平白消耗大腦 40% 的寶貴認知資源。</div>
+                    </div>
+                    <div class="tip-section">
+                        <div class="tip-sec-title">🌱 雄鷹式無痛調節行動</div>
+                        <div class="tip-sec-content">• <b>單向擊破鎖定</b>：劃定 20 分鐘的「無干擾專注島」，只聚焦解決眼前那一件核心任務。<br>• <b>視覺儀式感</b>：戴上耳機即代表進入捕獵狀態，阻絕外界雜訊。</div>
+                    </div>
+                    <div class="tip-section">
+                        <div class="tip-sec-title">💡 萌獸冷知識</div>
+                        <div class="tip-sec-content">老鷹飛行捕獵時眼睛會極度聚焦在單一目標點上。學會幫大腦做「減法」聚焦，能讓你的單一工作執行力精準提升 3 倍！</div>
+                    </div>`
+            },
+            fox: { 
+                name: '雲步狐 🦊', emoji: '🦊', color: 'var(--c-fox)', 
+                story: '「彈性安排。不追求完美，允許一切自由呼吸。」',
+                tips: `
+                    <div class="tip-section">
+                        <div class="tip-sec-title">🚨 現代人痛點檢測</div>
+                        <div class="tip-sec-content">過度追求極致完美的健康計劃，容易引發「非全即無」的極端心理壓力，一旦某天沒做到就會產生挫折感並輕易放棄。</div>
+                    </div>
+                    <div class="tip-section">
+                        <div class="tip-sec-title">🌱 靈狐式無痛調節行動</div>
+                        <div class="tip-sec-content">• <b>鐘擺容錯率</b>：今天太忙沒空走路？沒關係，多喝一杯水也是贏！允許生活計劃有高低起伏。<br>• <b>微小勝利法</b>：只要拉動了任何一個小拉桿，就在心裡幫自己放一個慶祝煙火。</div>
+                    </div>
+                    <div class="tip-section">
+                        <div class="tip-sec-title">💡 萌獸冷知識</div>
+                        <div class="tip-sec-content">狐狸在雪地捕食即使失敗，也會立刻優雅地拍拍身上的雪尋找下個目標。像狐狸一樣靈活變通，才不會被嚴苛的規則給綁架！</div>
+                    </div>`
+            }
+        };
+
+        let activeRole = 'capybara';
+        let tempAnswers = [];
+
+        // 固定的橫向間距像素，搭配靠左 12px，使週日(240px)剛好完美落在手機內不溢出
+        const stepX = 40; 
+
+        // 週一至週四的模擬歷史數據
+        const historyBase = {
+            water: [65, 45, 20, 55],
+            walk:  [50, 35, 10, 40],
+            sleep: [75, 55, 30, 45],
+            diet:  [40, 60, 15, 25]
+        };
+
+        function goNode(nodeId) {
+            document.getElementById('node-hero').style.display = 'none';
+            document.getElementById('node-quiz').style.display = 'none';
+            document.getElementById('node-result').style.display = 'none';
+            document.getElementById(`node-${nodeId}`).style.display = 'block';
+        }
+
+        function nextQuiz(step, code) {
+            if(code !== 'none') tempAnswers.push(code);
+            document.getElementById(`q-step-${step}`).style.display = 'none';
+            document.getElementById(`q-step-${step+1}`).style.display = 'block';
+        }
+
+        function calcResult(terminalChoice) {
+            let target = terminalChoice;
+            if (tempAnswers.includes('cat')) target = 'cat';
+            else if (tempAnswers.includes('capybara')) target = 'capybara';
+            renderRole(target);
+            goNode('result');
+        }
+
+        function changeRoleDirectly(roleKey) {
+            renderRole(roleKey);
+            pushLog(`使用者手動轉換萌獸為：【${roleData[roleKey].name}】`);
+        }
+
+        function renderRole(key) {
+            activeRole = key;
+            const r = roleData[key];
+            document.getElementById('role-card-box').style.backgroundColor = r.color;
+            document.getElementById('role-emoji').innerText = r.emoji;
+            document.getElementById('role-name').innerText = r.name;
+            document.getElementById('role-story').innerText = r.story;
+            document.getElementById('role-switcher').value = key;
+            
+            // 完美連動：點切換時，對應動物的完整全量知識庫會即時渲染更新！
+            document.getElementById('info-page-title').innerText = `💡 ${r.name} 的全面照顧指南`;
+            document.getElementById('dynamic-info-box').innerHTML = r.tips;
+            
+            updateAllStats();
+        }
+
+        function updateAllStats() {
+            const w = parseInt(document.getElementById('slide-water').value);
+            const wk = parseFloat(document.getElementById('slide-walk').value);
+            const s = parseInt(document.getElementById('slide-sleep').value);
+            const d = parseInt(document.getElementById('slide-diet').value);
+
+            document.getElementById('val-water').innerText = w + ' ml';
+            document.getElementById('val-walk').innerText = wk.toFixed(1) + ' km';
+            document.getElementById('val-sleep').innerText = s + ' 小時';
+            document.getElementById('val-diet').innerText = d + ' %';
+
+            const pW = Math.round((w / 2000) * 100);
+            const pWk = Math.round((wk / 10) * 100);
+            const pS = Math.round((s / 12) * 100);
+            const pD = d;
+
+            document.getElementById('stat-water').innerText = pW + '%';
+            document.getElementById('stat-walk').innerText = pWk + '%';
+            document.getElementById('stat-sleep').innerText = pS + '%';
+            document.getElementById('stat-diet').innerText = pD + '%';
+
+            const totalAvg = Math.round((pW + pWk + pS + pD) / 4);
+            document.getElementById('circle-today-fill').style.strokeDashoffset = 100 - totalAvg;
+            document.getElementById('circle-today-txt').innerText = totalAvg + '%';
+
+            // 核心演算法：橫軸包含一到日，但折線與端點圓圈只精準繪製到第五點(週五)
+            const types = ['water', 'walk', 'sleep', 'diet'];
+            const currentPercentages = { water: pW, walk: pWk, sleep: pS, diet: pD };
+
+            types.forEach(type => {
+                let pointsArr = [];
+                
+                // 1. 先塞入週一至週四的模擬歷史點 (前4個點)
+                for(let i = 1; i <= 4; i++) {
+                    let pct = historyBase[type][i-1];
+                    let x = (i - 1) * stepX;
+                    let y = 90 - Math.round((pct / 100) * 80);
+                    pointsArr.push(`${x},${y}`);
+                }
+
+                // 2. 塞入週五當天的點 (連動拉桿即時數值，橫坐標固定為 4 * 40 = 160px)
+                let fridayX = 4 * stepX; // 160
+                let fridayY = 90 - Math.round((currentPercentages[type] / 100) * 80);
+                pointsArr.push(`${fridayX},${fridayY}`);
+
+                // 3. 渲染畫線與終端定位圓圈 (六、日留白不畫線)
+                document.getElementById(`line-${type}`).setAttribute('points', pointsArr.join(' '));
+                document.getElementById(`dot-${type}`).setAttribute('cx', fridayX);
+                document.getElementById(`dot-${type}`).setAttribute('cy', fridayY);
+            });
+        }
+
+        function saveMirrorCardAndText() {
+            const userNote = document.getElementById('user-note-input').value.trim();
+            const r = roleData[activeRole];
+            const wText = document.getElementById('val-water').innerText;
+            const walkText = document.getElementById('val-walk').innerText;
+            const sText = document.getElementById('val-sleep').innerText;
+            const dText = document.getElementById('val-diet').innerText;
+
+            let logHTML = `<div class="log-item"><b>📥 [鏡像儲存成功]</b> 使用者上傳了今日卡片：<br>`;
+            logHTML += `<div class="log-snapshot-card" style="background:${r.color};"><b>${r.name}</b><br>📊 數據快照：💧${wText} | 🚶${walkText} | 💤${sText} | 🍎${dText}</div>`;
+            logHTML += userNote !== "" ? `<br><span style="color:#0284c7;">💭 <b>使用者樹洞隨筆：</b>「${userNote}」</span>` : `<br><span style="color:#9ca3af;">💭 <b>使用者樹洞隨筆：</b>（當天未填寫文字）</span>`;
+            logHTML += `</div>`;
+
+            const box = document.getElementById('b-log-box');
+            box.innerHTML = logHTML + box.innerHTML;
+            alert("💾 [同步成功]\n您的健康數據卡片與心情隨筆，已成功傳輸至系統日誌！");
+            document.getElementById('user-note-input').value = "";
+        }
+
+        function connectLineOA() {
+            alert("💬 [LINE OA 綁定成功]");
+            let el = document.getElementById('b-dl-counter');
+            el.innerText = (parseInt(el.innerText.replace(/,/g, '')) + 1).toLocaleString() + ' 次';
+        }
+
+        function navToPage(target) {
+            document.querySelectorAll('.nav-pixel-tab').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.p-page').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-nav-${target}`).classList.add('active');
+            document.getElementById(`p-tab-${target}`).classList.add('active');
+        }
+
+        function restartQuiz() {
+            tempAnswers = [];
+            document.getElementById('q-step-1').style.display = 'block';
+            document.getElementById('q-step-2').style.display = 'none';
+            document.getElementById('q-step-3').style.display = 'none';
+            goNode('hero');
+        }
+
+        function pushLog(text) {
+            const box = document.getElementById('b-log-box');
+            box.innerHTML = `<div class="log-item">[${new Date().toTimeString().split(' ')[0]}] ${text}</div>` + box.innerHTML;
+        }
+
+        window.onload = function() {
+            renderRole('capybara');
+        }
+    </script>
+</body>
+</html>
